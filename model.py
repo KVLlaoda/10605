@@ -10,7 +10,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
 
 class ConvNet(nn.Module):
-    def __init__(self, r1, r2, r3):
+    def __init__(self):
         super(ConvNet, self).__init__()
 
         self.model = nn.Sequential(
@@ -20,7 +20,7 @@ class ConvNet(nn.Module):
             nn.Conv2d(32, 32, kernel_size=3, padding=0, bias=True),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Dropout(r1),
+            nn.Dropout(0.2),
 
             # Second block: Conv -> ReLU -> Conv -> ReLU -> MaxPool -> Dropout
             nn.Conv2d(32, 64, kernel_size=3, padding=1, bias=True),
@@ -28,7 +28,7 @@ class ConvNet(nn.Module):
             nn.Conv2d(64, 64, kernel_size=3, padding=0, bias=True),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Dropout(r2),
+            nn.Dropout(0.2),
 
             # Flatten layer
             nn.Flatten(),
@@ -36,14 +36,14 @@ class ConvNet(nn.Module):
             # Fully connected block: Dense -> ReLU -> Dropout -> Dense -> Softmax
             nn.Linear(1024, 512),
             nn.ReLU(),
-            nn.Dropout(r3),
+            nn.Dropout(0.1),
             nn.Linear(512, 5),
         )
 
     def forward(self, x):
         return self.model(x)
 
-def train_one_epoch(model, train_loader, optimizer, criterion, device, w_mask, b_mask, layer_to_freeze):
+def train_one_epoch(model, train_loader, optimizer, criterion, device, w_mask, layer_to_freeze):
     model.train()  # Set model to training mode
     running_loss = 0.0
     correct = 0
@@ -65,13 +65,11 @@ def train_one_epoch(model, train_loader, optimizer, criterion, device, w_mask, b
         loss.backward()
         if layer_to_freeze is not None:
             layer_to_freeze.weight.grad *= w_mask
-            layer_to_freeze.bias.grad *= b_mask
 
         optimizer.step()
         if layer_to_freeze is not None:
             with torch.no_grad():
                 layer_to_freeze.weight *= w_mask
-                layer_to_freeze.bias *= b_mask
 
         # Track loss and accuracy
         running_loss += loss.item()
