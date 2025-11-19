@@ -50,15 +50,8 @@ def prune_linear_14(model, train_loader, val_loader, criterion, optimizer, devic
         ### prune parameters with weights below threshold (EXCLUDE BIAS)
         w_mask = layer_to_freeze.weight.abs() >= threshold if layer_to_freeze is not None else None
         w_mask = w_mask.to(device) if w_mask is not None else None
-        for layer in unfrozen_layers:
-            for param in layer.parameters():
-                param.requires_grad = True
-        for layer in frozen_layers:
-            for name, param in layer.named_parameters():
-                if "bias" in name:
-                    param.requires_grad = True   # allow bias training
-                else:
-                    param.requires_grad = False  # freeze weights
+        freeze_layers(frozen_layers)
+        unfreeze_layers(unfrozen_layers)
 
         with torch.no_grad():
             layer_to_freeze.weight *= w_mask
@@ -152,15 +145,8 @@ def prune_conv2d_9(model, train_loader, val_loader, criterion, optimizer, device
         ### prune parameters with weights below threshold (EXCLUDE BIAS)
         w_mask = layer_to_freeze.weight.abs() >= threshold if layer_to_freeze is not None else None
         w_mask = w_mask.to(device) if w_mask is not None else None
-        for layer in unfrozen_layers:
-            for param in layer.parameters():
-                param.requires_grad = True
-        for layer in frozen_layers:
-            for name, param in layer.named_parameters():
-                if "bias" in name:
-                    param.requires_grad = True   # allow bias training
-                else:
-                    param.requires_grad = False  # freeze weights
+        unfreeze_layers(unfrozen_layers)
+        freeze_layers(frozen_layers)
 
         with torch.no_grad():
             layer_to_freeze.weight *= w_mask
@@ -258,15 +244,8 @@ def prune_conv2d_7(model, train_loader, val_loader, criterion, optimizer, device
         ### prune parameters with weights below threshold (EXCLUDE BIAS)
         w_mask = layer_to_freeze.weight.abs() >= threshold if layer_to_freeze is not None else None
         w_mask = w_mask.to(device) if w_mask is not None else None
-        for layer in unfrozen_layers:
-            for param in layer.parameters():
-                param.requires_grad = True
-        for layer in frozen_layers:
-            for name, param in layer.named_parameters():
-                if "bias" in name:
-                    param.requires_grad = True   # allow bias training
-                else:
-                    param.requires_grad = False  # freeze weights
+        freeze_layers(frozen_layers)
+        unfreeze_layers(unfrozen_layers)
 
         with torch.no_grad():
             layer_to_freeze.weight *= w_mask
@@ -360,15 +339,7 @@ def prune_conv2d_3(model, train_loader, val_loader, criterion, optimizer, device
         ### prune parameters with weights below threshold (EXCLUDE BIAS)
         w_mask = layer_to_freeze.weight.abs() >= threshold if layer_to_freeze is not None else None
         w_mask = w_mask.to(device) if w_mask is not None else None
-        for layer in unfrozen_layers:
-            for param in layer.parameters():
-                param.requires_grad = True
-        for layer in frozen_layers:
-            for name, param in layer.named_parameters():
-                if "bias" in name:
-                    param.requires_grad = True   # allow bias training
-                else:
-                    param.requires_grad = False  # freeze weights
+        freeze_layers(frozen_layers)
 
         with torch.no_grad():
             layer_to_freeze.weight *= w_mask
@@ -435,6 +406,19 @@ def compute_sparsity(model):
     sparsity = total_zeros / total_params
     return sparsity
 
+def freeze_layers(layers):
+    for layer in layers:
+        for name, param in layer.named_parameters():
+            if "bias" in name:
+                param.requires_grad = True   # allow bias training
+            else:
+                param.requires_grad = False  # freeze weights
+
+def unfreeze_layers(layers):
+    for layer in layers:
+        for param in layer.parameters():
+            param.requires_grad = True
+
 # load train and val
 train_images = pickle.load(open('train_images.pkl', 'rb'))
 train_labels = pickle.load(open('train_labels.pkl', 'rb'))
@@ -458,7 +442,7 @@ model = ConvNet()
 criterion = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.0001, weight_decay=1e-6)
 
-prune_linear_14(model, train_loader, val_loader, criterion, optimizer, device)
+# prune_linear_14(model, train_loader, val_loader, criterion, optimizer, device)
 prune_conv2d_9(model, train_loader, val_loader, criterion, optimizer, device)
 prune_conv2d_7(model, train_loader, val_loader, criterion, optimizer, device)
 # prune_conv2d_3(model, train_loader, val_loader, criterion, optimizer,
